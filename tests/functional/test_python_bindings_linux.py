@@ -18,7 +18,7 @@ kwargs = {
 @pytest.mark.usefixtures('_is_image_os', '_is_not_distribution')
 @pytest.mark.parametrize('_is_image_os', [('ubuntu18', 'ubuntu20', 'centos7')], indirect=True)
 class TestPythonBindingsLinux:
-    @pytest.mark.parametrize('_is_not_distribution', [('base', 'custom-no-cv')], indirect=True)
+    @pytest.mark.parametrize('_is_not_distribution', [('base', 'custom-no-cv', 'wheel')], indirect=True)
     def test_opencv_bindings(self, tester, image):
         tester.test_docker_image(
             image,
@@ -28,7 +28,7 @@ class TestPythonBindingsLinux:
             self.test_opencv_bindings.__name__, **kwargs,
         )
 
-    @pytest.mark.parametrize('_is_not_distribution', [('base')], indirect=True)
+    @pytest.mark.parametrize('_is_not_distribution', [('base', 'wheel')], indirect=True)
     def test_openvino_bindings(self, tester, image):
         tester.test_docker_image(
             image,
@@ -40,7 +40,7 @@ class TestPythonBindingsLinux:
 
     @pytest.mark.usefixtures('_min_product_version', '_python_ngraph_required')
     @pytest.mark.parametrize('_min_product_version', ['2021.1'], indirect=True)
-    @pytest.mark.parametrize('_is_not_distribution', [('base')], indirect=True)
+    @pytest.mark.parametrize('_is_not_distribution', [('base', 'wheel')], indirect=True)
     def test_ngraph_bindings(self, tester, image):
         tester.test_docker_image(
             image,

@@ -10,5 +10,5 @@ Run tests with:
 
 ```sh
 cd <docker_ci>
-python3 ./docker_openvino.py test --tags <image_repo>:<image_tag> --distribution custom-full -k wheel
+python3 ./docker_openvino.py test --tags <image_repo>:<image_tag> --distribution wheel
 ```

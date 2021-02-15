@@ -12,11 +12,12 @@ kwargs = {
     'volumes': {
         root / 'tests' / 'resources' / 'python_bindings': {'bind': '/home/openvino/python_bindings'},
     },
+    'user': 'openvino'
 }
 
 
-# @pytest.mark.usefixtures('_is_image_os', '_is_distribution')
-# @pytest.mark.parametrize('_is_distribution', [('custom-full')], indirect=True)
+@pytest.mark.usefixtures('_is_distribution')
+@pytest.mark.parametrize('_is_distribution', [('wheel')], indirect=True)
 class TestPythonBindingsLinuxWheel:
     # @pytest.mark.parametrize('_is_not_distribution', [('base', 'custom-no-cv')], indirect=True)
     # def test_opencv_bindings(self, tester, image):
@@ -28,11 +29,11 @@ class TestPythonBindingsLinuxWheel:
     #         self.test_opencv_bindings.__name__, **kwargs,
     #     )
 
-    # @pytest.mark.parametrize('_is_distribution', [('custom-full')], indirect=True)
+    # @pytest.mark.parametrize('_is_distribution', [('wheel')], indirect=True)
     def test_openvino_wheel_bindings(self, tester, image):
         tester.test_docker_image(
             image,
-            # ['/bin/bash -ac "su openvino"', '/bin/bash -ac "whoami"'],
+            # ['/bin/bash -ac "whoami"'],
             ['/bin/bash -ac "python3 /home/openvino/python_bindings/openvino_bindings.py"',],
             self.test_openvino_wheel_bindings.__name__, **kwargs,
         )

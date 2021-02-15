@@ -4,3 +4,4 @@
 import ngraph
 
 print('ngraph has been imported')
+print(f'ngraph version: {ngraph.__version__}')
