@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.usefixtures('_is_image_os', '_is_distribution', '_is_package_url_specified')
-@pytest.mark.parametrize('_is_image_os', [('ubuntu18', 'ubuntu20', 'centos7')], indirect=True)
+@pytest.mark.parametrize('_is_image_os', [('ubuntu18', 'ubuntu20', 'centos7', 'rhel8')], indirect=True)
 @pytest.mark.parametrize('_is_distribution', [('data_runtime', 'custom-no-omz', 'custom-no-cv')], indirect=True)
 class TestDemosLinuxDataRuntime:
     @pytest.mark.usefixtures('_python_ngraph_required')
@@ -67,7 +67,7 @@ class TestDemosLinuxDataRuntime:
         )
 
     @pytest.mark.vpu
-    @pytest.mark.usefixtures('_python_ngraph_required')
+    @pytest.mark.usefixtures('_python_ngraph_required', '_python_vpu_plugin_required')
     def test_detection_ssd_python_vpu(self, tester, image, distribution, dev_root, sample_name):
         kwargs = {
             'device_cgroup_rules': ['c 189:* rmw'],
@@ -132,7 +132,7 @@ class TestDemosLinuxDataRuntime:
 
 
 @pytest.mark.usefixtures('_is_image_os', '_is_distribution', '_is_package_url_specified')
-@pytest.mark.parametrize('_is_image_os', [('ubuntu18', 'ubuntu20', 'centos7')], indirect=True)
+@pytest.mark.parametrize('_is_image_os', [('ubuntu18', 'ubuntu20', 'centos7', 'rhel8')], indirect=True)
 @pytest.mark.parametrize('_is_distribution', [('runtime', 'custom-no-omz', 'custom-no-cv')], indirect=True)
 class TestDemosLinuxRuntime:
     def test_segmentation_python_cpu(self, tester, image, distribution, dev_root):
@@ -196,6 +196,7 @@ class TestDemosLinuxRuntime:
         )
 
     @pytest.mark.vpu
+    @pytest.mark.usefixtures('_python_vpu_plugin_required')
     def test_segmentation_python_vpu(self, tester, image, distribution, dev_root):
         kwargs = {
             'device_cgroup_rules': ['c 189:* rmw'],

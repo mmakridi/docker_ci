@@ -1,16 +1,12 @@
 # Copyright (C) 2019-2021 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-FROM centos:8.2.2004 AS base
+FROM registry.access.redhat.com/ubi8/ubi:8.2 AS base
 
 # hadolint ignore=DL3002
 USER root
 WORKDIR /
 
 SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
-
-# hadolint ignore=DL3031, DL3033
-RUN yum update -y && yum install -y curl ca-certificates && \
-    yum clean all && rm -rf /var/cache/yum
 
 
 # get product from URL
@@ -38,10 +34,15 @@ RUN tar -xzf "${TEMP_DIR}"/*.tgz && \
 
 
 # -----------------
-FROM centos:8.2.2004 AS ov_base
+FROM registry.access.redhat.com/ubi8/ubi:8.2 AS ov_base
 
-LABEL Description="This is the runtime image for Intel(R) Distribution of OpenVINO(TM) toolkit on CentOS 8"
-LABEL Vendor="Intel Corporation"
+LABEL name="rhel8_runtime" \
+      maintainer="openvino_docker@intel.com" \
+      vendor="Intel Corporation" \
+      version="2021.2" \
+      release="2021.2" \
+      summary="Provides the latest release of Intel(R) Distribution of OpenVINO(TM) toolkit." \
+      description="This is the runtime image for Intel(R) Distribution of OpenVINO(TM) toolkit on RHEL UBI 8"
 
 USER root
 WORKDIR /
@@ -78,17 +79,35 @@ RUN yum -y update && rpm -qa --qf "%{name}\n" > base_packages.txt && \
 		fi \
 	  done && \
       echo "Download source for `ls | wc -l` third-party packages: `du -sh`"; fi && \
-	yum clean all && rm -rf /var/cache/yum && rm -rf *.txt
+	yum clean all && rm -rf /var/cache/yum
 
 WORKDIR ${INTEL_OPENVINO_DIR}/licensing
 RUN if [ "$INSTALL_SOURCES" = "no" ]; then \
         echo "This image doesn't contain source for 3d party components under LGPL/GPL licenses. Please use tag <YYYY.U_src> to pull the image with downloaded sources." > DockerImage_readme.txt ; \
     fi
 
+WORKDIR /licenses
+RUN cp -rf "${INTEL_OPENVINO_DIR}"/licensing /licenses
 
 
+# setup Python
+ENV PYTHON_VER python3.6
+
+# hadolint ignore=DL3031, DL3033
+RUN yum install -y python3 && \
+    yum clean all && rm -rf /var/cache/yum
+
+RUN ${PYTHON_VER} -m pip install --upgrade pip
 
 # runtime package
+
+# download source for PyPi LGPL packages
+WORKDIR /thirdparty
+RUN if [ "$INSTALL_SOURCES" = "yes" ]; then \
+        curl -L https://files.pythonhosted.org/packages/81/41/e6cb9026374771e3bdb4c0fe8ac0c51c693a14b4f72f26275da15f7a4d8b/ethtool-0.14.tar.gz --output ethtool-0.14.tar.gz; \
+        curl -L https://files.pythonhosted.org/packages/ef/86/c5a34243a932346c59cb25eb49a4d1dec227974209eb9b618d0ed57ea5be/gpg-1.10.0.tar.gz --output gpg-1.10.0.tar.gz; \
+        curl -L https://files.pythonhosted.org/packages/e0/e8/1e4f21800015a9ca153969e85fc29f7962f8f82fc5dbc1ecbdeb9dc54c75/PyGObject-3.28.3.tar.gz --output PyGObject-3.28.3.tar.gz; \
+    fi
 
 # for CPU
 

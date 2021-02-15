@@ -2,11 +2,11 @@
 # Copyright (C) 2019-2021 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import logging
+import os
 import pathlib
 import shutil
 import subprocess  # nosec
 import sys
-import os
 
 import pytest
 from utils.docker_api import DockerAPI
@@ -36,6 +36,9 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         'markers', 'gpu: run tests on GPU device',
+    )
+    config.addinivalue_line(
+        'markers', 'save_pypi_deps: run test to save PyPi dependencies',
     )
     dist = config.getoption('--distribution')
     if dist in ('data_runtime', 'runtime', 'custom-no-omz', 'custom-no-cv'):
@@ -150,10 +153,16 @@ def dev_root(request):
 
 @pytest.fixture(scope='session')
 def install_openvino_dependencies(request):
-    if request.config.getoption('--product_version') < '2021.3':
+    # installation of 3d party dependencies for data processing components isn't required since 2021.2
+    if request.config.getoption('--product_version') < '2021.2':
         return '/opt/intel/openvino/install_dependencies/install_openvino_dependencies.sh'
     else:
-        return '/opt/intel/openvino/install_dependencies/install_openvino_dependencies.sh -y -e'
+        image_os = request.config.getoption('--image_os')
+        if 'ubuntu' in image_os:
+            return '/bin/bash -ac "apt update && apt install -y build-essential sudo curl cmake"'
+        elif any(x in image_os for x in ('centos', 'rhel')):
+            return '/bin/bash -ac "yum update -y && yum install -y make"'
+    return ''
 
 
 def switch_container_engine(engine):
@@ -189,6 +198,14 @@ def _is_not_distribution(request):
 
 
 @pytest.fixture(scope='session')
+def _is_not_image_os(request):
+    settings = [request.param] if isinstance(request.param, str) else request.param
+    image_os = request.config.getoption('--image_os')
+    if image_os in settings:
+        pytest.skip(f'Test requires the image os should not be {request.param} but get {image_os}')
+
+
+@pytest.fixture(scope='session')
 def _is_image_os(request):
     settings = [request.param] if isinstance(request.param, str) else request.param
     image_os = request.config.getoption('--image_os')
@@ -220,6 +237,17 @@ def _python_ngraph_required(request):
     process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # nosec
     if process.returncode != 0:
         pytest.skip('Test requires ngraph python bindings.')
+
+
+@pytest.fixture(scope='session')
+def _python_vpu_plugin_required(request):
+    image = request.config.getoption('--image')
+    if request.config.getoption('--image_os') != 'winserver2019':
+        command = ['docker', 'run', '--rm', image, 'bash', '-c',
+                   'find deployment_tools/inference_engine/lib/intel64 | grep libmyriadPlugin.so']
+        process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # nosec
+        if process.returncode != 0:
+            pytest.skip('Test requires VPU plugin.')
 
 
 def pytest_generate_tests(metafunc):
@@ -262,3 +290,6 @@ def pytest_runtest_setup(item):
                                      shell=False)  # nosec
             if process.returncode != 0:
                 pytest.skip('Test requires Intel GPU device on the host machine')
+
+        if 'save_pypi_deps' in mark.name and 'save_pypi_deps' != item.config.known_args_namespace.keyword:
+            pytest.skip('Test should be executed directly -m save_pypi_deps -k save_pypi_deps')

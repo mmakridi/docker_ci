@@ -7,6 +7,8 @@ import pathlib
 import pytest
 
 
+@pytest.mark.usefixtures('_is_not_distribution')
+@pytest.mark.parametrize('_is_not_distribution', [('base')], indirect=True)
 class TestPyPiDependencies:
     @pytest.mark.xfail(reason='47558 GPL Unidecode PyPi package as dependency for OMZ text_to_speech_demo')
     def test_gpl_pypi_deps(self, tester, image):
@@ -14,7 +16,7 @@ class TestPyPiDependencies:
         image_folder = image.replace('/', '_').replace(':', '_')
         pypi_log_folder = root / 'logs' / image_folder / 'pypi_deps'
         if not pypi_log_folder.exists():
-            pypi_log_folder.mkdir()
+            pypi_log_folder.mkdir(parents=True)
         kwargs = {
             'volumes': {
                 root / 'tests' / 'resources' / 'pypi_deps': {'bind': '/tmp/pypi_deps', 'mode': 'rw'},  # nosec
@@ -62,7 +64,7 @@ class TestPyPiDependencies:
         image_folder = image.replace('/', '_').replace(':', '_')
         pypi_log_folder = root / 'logs' / image_folder / 'pypi_deps'
         if not pypi_log_folder.exists():
-            pypi_log_folder.mkdir()
+            pypi_log_folder.mkdir(parents=True)
         kwargs = {
             'volumes': {
                 root / 'tests' / 'resources' / 'pypi_deps': {'bind': '/tmp/pypi_deps', 'mode': 'rw'},  # nosec

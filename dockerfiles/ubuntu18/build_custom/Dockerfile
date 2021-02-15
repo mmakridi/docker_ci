@@ -6,32 +6,33 @@ FROM ubuntu:18.04 AS setup_openvino
 RUN apt-get update; \
     DEBIAN_FRONTEND=noninteractive \
     apt-get install -y --no-install-recommends \
-        tzdata \
         git \
         git-lfs \
+        ca-certificates \
         sudo \
-        python3-dev \
-        python3-pip \
-        python3-venv \
-        python3-setuptools; \
+        tzdata; \
     rm -rf /var/lib/apt/lists/*
 
-ARG openvino_branch="master"
+ARG OPENVINO_BRANCH="master"
 
-WORKDIR /tmp
 RUN git-lfs install; \
-    git clone --recurse-submodules --shallow-submodules https://github.com/openvinotoolkit/openvino.git --depth 1 -b ${openvino_branch}
+    git clone https://github.com/openvinotoolkit/openvino.git \
+    --recurse-submodules --shallow-submodules --depth 1 -b ${OPENVINO_BRANCH} /tmp/openvino
 
 WORKDIR /tmp/openvino
 RUN chmod +x install_build_dependencies.sh; \
     ./install_build_dependencies.sh
 
-RUN chmod +x install_dependencies/install_NEO_OCL_driver.sh; \
-    ./scripts/install_dependencies/install_NEO_OCL_driver.sh -y
+ARG OCL_VERSION="19.41.14441"
+
+RUN chmod +x scripts/install_dependencies/install_NEO_OCL_driver.sh; \
+    ./scripts/install_dependencies/install_NEO_OCL_driver.sh -y --no_numa -d ${OCL_VERSION}
 
 # hadolint ignore=DL3013
-RUN python3 -m pip install --no-cache-dir --upgrade pip; \
-    pip3 install --no-cache-dir -r inference-engine/ie_bridges/python/requirements.txt
+RUN chmod +x scripts/install_dependencies/install_openvino_dependencies.sh; \
+    ./scripts/install_dependencies/install_openvino_dependencies.sh -y -c=python; \
+    python3 -m pip install --no-cache-dir --upgrade pip; \
+    python3 -m pip install --no-cache-dir -r inference-engine/ie_bridges/python/requirements.txt
 
 WORKDIR /tmp
 CMD ["/bin/bash"]
@@ -75,22 +76,20 @@ FROM copy_openvino AS openvino
 RUN apt-get update; \
     DEBIAN_FRONTEND=noninteractive \
     apt-get install -y --no-install-recommends \
-        tzdata \
         wget \
         udev \
         sudo \
-        python3-dev \
-        python3-pip \
-        python3-venv \
-        python3-setuptools; \
+        tzdata; \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${INTEL_OPENVINO_DIR}
 RUN chmod +x install_dependencies/install_openvino_dependencies.sh; \
-    ./install_dependencies/install_openvino_dependencies.sh -y
+    ./install_dependencies/install_openvino_dependencies.sh -y -c=python -c=dev
+
+ARG OCL_VERSION="19.41.14441"
 
 RUN chmod +x install_dependencies/install_NEO_OCL_driver.sh; \
-    ./install_dependencies/install_NEO_OCL_driver.sh -y
+    ./install_dependencies/install_NEO_OCL_driver.sh -y --no_numa -d ${OCL_VERSION}
 
 WORKDIR /opt/libusb-1.0.22
 RUN ./libtool --mode=install install -c libusb/libusb-1.0.la /usr/local/lib/; \
@@ -105,8 +104,8 @@ RUN chmod +x install_dependencies/install_NCS_udev_rules.sh; \
 
 # hadolint ignore=DL3013
 RUN python3 -m pip install --no-cache-dir --upgrade pip; \
-    pip3 install --no-cache-dir -r python/python3.6/requirements.txt; \
-    pip3 install --no-cache-dir -r deployment_tools/model_optimizer/requirements.txt
+    python3 -m pip install --no-cache-dir -r python/python3.6/requirements.txt; \
+    python3 -m pip install --no-cache-dir -r deployment_tools/model_optimizer/requirements.txt
 
 RUN ln -s deployment_tools/inference_engine/ inference_engine
 RUN printf "\nsource \${INTEL_OPENVINO_DIR}/bin/setupvars.sh\n" >> /root/.bashrc
@@ -125,13 +124,18 @@ RUN apt-get update; \
         libavcodec-dev \
         libavformat-dev \
         libavutil-dev \
-        libswscale-dev; \
+        libswscale-dev \
+        libavresample-dev \
+        libgstreamer1.0-dev \
+        libgstreamer-plugins-base1.0-dev \
+        libgstreamer-plugins-good1.0-dev \
+        libgstreamer-plugins-bad1.0-dev; \
     rm -rf /var/lib/apt/lists/*
 
-ARG opencv_branch="master"
+ARG OPENCV_BRANCH="master"
 
 WORKDIR /tmp
-RUN git clone https://github.com/opencv/opencv.git --depth 1 -b ${opencv_branch}
+RUN git clone https://github.com/opencv/opencv.git --depth 1 -b ${OPENCV_BRANCH}
 
 COPY opencv_cmake.txt /tmp
 
@@ -155,11 +159,11 @@ CMD ["/bin/bash"]
 # -------------------------------------------------------------------------------------------------
 FROM opencv AS open_model_zoo
 
-ARG omz_branch="master"
+ARG OMZ_BRANCH="master"
 
 WORKDIR ${INTEL_OPENVINO_DIR}/deployment_tools
-RUN git clone https://github.com/openvinotoolkit/open_model_zoo.git --depth 1 -b ${omz_branch}; \
-    pip3 install --no-cache-dir -r open_model_zoo/tools/downloader/requirements.in; \
+RUN git clone https://github.com/openvinotoolkit/open_model_zoo.git --depth 1 -b ${OMZ_BRANCH}; \
+    python3 -m pip install --no-cache-dir -r open_model_zoo/tools/downloader/requirements.in; \
     ln -s ../open_model_zoo/demos inference_engine/demos
 
 WORKDIR ${INTEL_OPENVINO_DIR}

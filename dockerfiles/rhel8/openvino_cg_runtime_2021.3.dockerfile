@@ -1,12 +1,18 @@
 # Copyright (C) 2019-2021 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-FROM registry.access.redhat.com/ubi8:8.2 AS base
+FROM registry.access.redhat.com/ubi8/ubi:8.2 AS base
 
 # hadolint ignore=DL3002
 USER root
 WORKDIR /
 
 SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
+
+ARG SUBSCRIPTION_USER=
+ARG SUBSCRIPTION_PASSWD=
+
+RUN subscription-manager register --username $SUBSCRIPTION_USER  --password $SUBSCRIPTION_PASSWD --auto-attach && \
+    subscription-manager release --set=`cat /etc/*release | grep VERSION_ID | cut -f2 -d'"'`
 
 
 # get product from URL
@@ -36,21 +42,27 @@ RUN tar -xzf "${TEMP_DIR}"/*.tgz && \
 # -----------------
 FROM registry.access.redhat.com/ubi8/ubi:8.2 AS ov_base
 
+ARG SUBSCRIPTION_USER=
+ARG SUBSCRIPTION_PASSWD=
+
 LABEL name="rhel8_runtime" \
       maintainer="openvino_docker@intel.com" \
       vendor="Intel Corporation" \
       version="2021.3" \
       release="2021.3" \
       summary="Provides the latest release of Intel(R) Distribution of OpenVINO(TM) toolkit." \
-      description="This is the runtime image for Intel(R) Distribution of OpenVINO(TM) toolkit on RHEL UBI 8.2"
+      description="This is the runtime image for Intel(R) Distribution of OpenVINO(TM) toolkit on RHEL UBI 8"
 
 USER root
 WORKDIR /
 
 SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
 
-# Creating user openvino and adding it to group "users"
-RUN useradd -ms /bin/bash -G users openvino && \
+RUN subscription-manager register --username $SUBSCRIPTION_USER  --password $SUBSCRIPTION_PASSWD --auto-attach && \
+    subscription-manager release --set=`cat /etc/*release | grep VERSION_ID | cut -f2 -d'"'`
+
+# Creating user openvino and adding it to groups "video" and "users" to use GPU and VPU
+RUN useradd -ms /bin/bash -G video,users openvino && \
     chown openvino -R /home/openvino
 
 RUN mkdir /opt/intel
@@ -59,15 +71,16 @@ ENV INTEL_OPENVINO_DIR /opt/intel/openvino
 
 COPY --from=base /opt/intel /opt/intel
 
-ARG LGPL_DEPS="gcc-c++ \
-               gtk3"
+ARG LGPL_DEPS="gcc-c++"
+ARG INSTALL_PACKAGES="-c=opencv_req -c=python -c=opencv_opt"
 
 ARG INSTALL_SOURCES="no"
 
 WORKDIR /thirdparty
 # hadolint ignore=DL3031, DL3033
-RUN yum -y update && rpm -qa --qf "%{name}\n" > base_packages.txt && \
+RUN rpm -qa --qf "%{name}\n" > base_packages.txt && \
 	yum install -y ${LGPL_DEPS} && \
+	${INTEL_OPENVINO_DIR}/install_dependencies/install_openvino_dependencies.sh -y $INSTALL_PACKAGES && \
 	if [ "$INSTALL_SOURCES" = "yes" ]; then \
 		rpm -qa --qf "%{name}\n" > all_packages.txt && \
 		grep -v -f base_packages.txt all_packages.txt | while read line; do \
@@ -93,10 +106,6 @@ RUN cp -rf "${INTEL_OPENVINO_DIR}"/licensing /licenses
 # setup Python
 ENV PYTHON_VER python3.6
 
-# hadolint ignore=DL3031, DL3033
-RUN yum update -y && yum install -y python3 && \
-    yum clean all && rm -rf /var/cache/yum
-
 RUN ${PYTHON_VER} -m pip install --upgrade pip
 
 # runtime package
@@ -109,11 +118,26 @@ RUN if [ "$INSTALL_SOURCES" = "yes" ]; then \
         curl -L https://files.pythonhosted.org/packages/e0/e8/1e4f21800015a9ca153969e85fc29f7962f8f82fc5dbc1ecbdeb9dc54c75/PyGObject-3.28.3.tar.gz --output PyGObject-3.28.3.tar.gz; \
     fi
 
+WORKDIR /tmp
+
+RUN ${PYTHON_VER} -m pip install --no-cache-dir -r ${INTEL_OPENVINO_DIR}/python/${PYTHON_VER}/requirements.txt
+
 # for CPU
+
+# for GPU
+ARG INTEL_OPENCL
+
+RUN groupmod -g 44 video
+
+# hadolint ignore=DL3031, DL3033
+WORKDIR ${INTEL_OPENVINO_DIR}/install_dependencies
+RUN ./install_NEO_OCL_driver.sh --no_numa -y -d ${INTEL_OPENCL} && \
+    yum clean all && rm -rf /var/cache/yum && \
+    yum remove -y epel-release
 
 
 # Post-installation cleanup and setting up OpenVINO environment variables
-RUN rm -rf /tmp && mkdir /tmp
+RUN rm -rf /tmp && mkdir /tmp && subscription-manager unregister
 RUN if [ -f "${INTEL_OPENVINO_DIR}"/bin/setupvars.sh ]; then \
         printf "\nexport TBB_DIR=\${INTEL_OPENVINO_DIR}/deployment_tools/inference_engine/external/tbb/cmake\n" >> ${INTEL_OPENVINO_DIR}/bin/setupvars.sh; \
         printf "\nsource \${INTEL_OPENVINO_DIR}/bin/setupvars.sh\n" >> /home/openvino/.bashrc; \

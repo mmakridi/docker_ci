@@ -6,106 +6,195 @@ import pytest
 
 @pytest.mark.usefixtures('_is_image_os', '_is_distribution')
 @pytest.mark.parametrize('_is_image_os', [('ubuntu18', 'ubuntu20')], indirect=True)
-@pytest.mark.parametrize('_is_distribution', [('dev', 'proprietary', 'custom-full')], indirect=True)
-class TestDemosLinux:
-    def test_security_cpu(self, tester, image):
+@pytest.mark.parametrize('_is_distribution', [('data_dev', 'proprietary')], indirect=True)
+class TestDemosLinuxDataDev:
+    def test_action_recognition_python_cpu(self, tester, image):
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            ['/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
+             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
+             'head-pose-face-detection-female.mp4?raw=true"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
+             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
+             'action_recognition/action_recognition.py '
+             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
+             'action-recognition-0001-encoder.xml '
+             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
+             'action-recognition-0001-decoder.xml '
+             '-i /root/action_recognition.mp4 -d CPU --no_show"',
+             ],
+            self.test_action_recognition_python_cpu.__name__,
+        )
+
+    @pytest.mark.gpu
+    def test_action_recognition_python_gpu(self, tester, image):
+        kwargs = {'devices': ['/dev/dri:/dev/dri'], 'mem_limit': '3g'}
+        tester.test_docker_image(
+            image,
+            ['/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
+             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
+             'head-pose-face-detection-female.mp4?raw=true"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
+             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
+             'action_recognition/action_recognition.py '
+             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
+             'action-recognition-0001-encoder.xml '
+             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
+             'action-recognition-0001-decoder.xml '
+             '-i /root/action_recognition.mp4 -d GPU --no_show"',
+             ],
+            self.test_action_recognition_python_gpu.__name__, **kwargs,
+        )
+
+    @pytest.mark.vpu
+    def test_action_recognition_python_vpu(self, tester, image):
+        kwargs = {'device_cgroup_rules': ['c 189:* rmw'],
+                  'volumes': ['/dev/bus/usb:/dev/bus/usb'], 'mem_limit': '3g'}  # nosec # noqa: S108
+        tester.test_docker_image(
+            image,
+            ['/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
+             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
+             'head-pose-face-detection-female.mp4?raw=true"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
+             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
+             'action_recognition/action_recognition.py '
+             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
+             'action-recognition-0001-encoder.xml '
+             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
+             'action-recognition-0001-decoder.xml '
+             '-i /root/action_recognition.mp4 -d MYRIAD --no_show"',
+             ],
+            self.test_action_recognition_python_vpu.__name__, **kwargs,
+        )
+
+    @pytest.mark.hddl
+    def test_action_recognition_python_hddl(self, tester, image):
+        kwargs = {'devices': ['/dev/ion:/dev/ion'],
+                  'volumes': ['/var/tmp:/var/tmp'], 'mem_limit': '3g'}  # nosec # noqa: S108
+        tester.test_docker_image(
+            image,
+            ['/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
+             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
+             'head-pose-face-detection-female.mp4?raw=true"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
+             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
+             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
+             'action_recognition/action_recognition.py '
+             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
+             'action-recognition-0001-encoder.xml '
+             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
+             'action-recognition-0001-decoder.xml '
+             '-i /root/action_recognition.mp4 -d HDDL --no_show"',
+             ],
+            self.test_action_recognition_python_hddl.__name__, **kwargs,
+        )
+
+
+@pytest.mark.usefixtures('_is_image_os', '_is_distribution')
+@pytest.mark.parametrize('_is_image_os', [('ubuntu18', 'ubuntu20')], indirect=True)
+@pytest.mark.parametrize('_is_distribution', [('dev', 'proprietary', 'custom-full')], indirect=True)
+class TestDemosLinux:
+    def test_security_cpu(self, tester, image, install_openvino_dependencies):
+        tester.test_docker_image(
+            image,
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_security_barrier_camera.sh -d CPU '
              '-sample-options -no_show',
              ], self.test_security_cpu.__name__,
         )
 
     @pytest.mark.gpu
-    def test_security_gpu(self, tester, image):
+    def test_security_gpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/dri:/dev/dri'], 'mem_limit': '3g'}
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_security_barrier_camera.sh -d GPU '
              '-sample-options -no_show',
              ], self.test_security_gpu.__name__, **kwargs,
         )
 
     @pytest.mark.vpu
-    def test_security_vpu(self, tester, image):
+    def test_security_vpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'device_cgroup_rules': ['c 189:* rmw'],
                   'volumes': ['/dev/bus/usb:/dev/bus/usb'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_security_barrier_camera.sh -d MYRIAD '
              '-sample-options -no_show',
              ], self.test_security_vpu.__name__, **kwargs,
         )
 
     @pytest.mark.hddl
-    def test_security_hddl(self, tester, image):
+    def test_security_hddl(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/ion:/dev/ion'],
                   'volumes': ['/var/tmp:/var/tmp'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_security_barrier_camera.sh -d HDDL '
              '-sample-options -no_show',
              ], self.test_security_hddl.__name__, **kwargs,
         )
 
-    def test_squeezenet_cpu(self, tester, image):
+    def test_squeezenet_cpu(self, tester, image, install_openvino_dependencies):
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_squeezenet_download_convert_run.sh -d CPU',
              ], self.test_squeezenet_cpu.__name__,
         )
 
     @pytest.mark.gpu
-    def test_squeezenet_gpu(self, tester, image):
+    def test_squeezenet_gpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/dri:/dev/dri'], 'mem_limit': '3g'}
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_squeezenet_download_convert_run.sh -d GPU',
              ], self.test_squeezenet_gpu.__name__, **kwargs,
         )
 
     @pytest.mark.vpu
-    def test_squeezenet_vpu(self, tester, image):
+    def test_squeezenet_vpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'device_cgroup_rules': ['c 189:* rmw'],
                   'volumes': ['/dev/bus/usb:/dev/bus/usb'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_squeezenet_download_convert_run.sh -d MYRIAD',
              ], self.test_squeezenet_vpu.__name__, **kwargs,
         )
 
     @pytest.mark.hddl
-    def test_squeezenet_hddl(self, tester, image):
+    def test_squeezenet_hddl(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/ion:/dev/ion'],
                   'volumes': ['/var/tmp:/var/tmp'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['apt update',
-             'apt install -y sudo',
+            [install_openvino_dependencies,
              '/opt/intel/openvino/deployment_tools/demo/demo_squeezenet_download_convert_run.sh -d HDDL',
              ], self.test_squeezenet_hddl.__name__, **kwargs,
         )
 
-    def test_crossroad_cpp_cpu(self, tester, image):
+    def test_crossroad_cpp_cpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'mem_limit': '3g'}
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac "source /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac "source /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac "source /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -121,12 +210,12 @@ class TestDemosLinux:
         )
 
     @pytest.mark.gpu
-    def test_crossroad_cpp_gpu(self, tester, image):
+    def test_crossroad_cpp_gpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/dri:/dev/dri'], 'mem_limit': '3g'}
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -142,13 +231,13 @@ class TestDemosLinux:
         )
 
     @pytest.mark.vpu
-    def test_crossroad_cpp_vpu(self, tester, image):
+    def test_crossroad_cpp_vpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'device_cgroup_rules': ['c 189:* rmw'],
                   'volumes': ['/dev/bus/usb:/dev/bus/usb'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -164,13 +253,13 @@ class TestDemosLinux:
         )
 
     @pytest.mark.hddl
-    def test_crossroad_cpp_hddl(self, tester, image):
+    def test_crossroad_cpp_hddl(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/ion:/dev/ion'],
                   'volumes': ['/var/tmp:/var/tmp'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -185,13 +274,13 @@ class TestDemosLinux:
             self.test_crossroad_cpp_hddl.__name__, **kwargs,
         )
 
-    def test_text_cpp_cpu(self, tester, image, product_version):
+    def test_text_cpp_cpu(self, tester, image, product_version, install_openvino_dependencies):
         kwargs = {'mem_limit': '3g'}
         options = '-dt image' if '2021' not in product_version else ''  # legacy option, removed in 2021R
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -205,13 +294,13 @@ class TestDemosLinux:
         )
 
     @pytest.mark.gpu
-    def test_text_cpp_gpu(self, tester, image, product_version):
+    def test_text_cpp_gpu(self, tester, image, product_version, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/dri:/dev/dri'], 'mem_limit': '3g'}
         options = '-dt image' if '2021' not in product_version else ''
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -225,14 +314,14 @@ class TestDemosLinux:
         )
 
     @pytest.mark.vpu
-    def test_text_cpp_vpu(self, tester, image, product_version):
+    def test_text_cpp_vpu(self, tester, image, product_version, install_openvino_dependencies):
         kwargs = {'device_cgroup_rules': ['c 189:* rmw'],
                   'volumes': ['/dev/bus/usb:/dev/bus/usb'], 'mem_limit': '3g'}  # nosec # noqa: S108
         options = '-dt image' if '2021' not in product_version else ''
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -247,14 +336,14 @@ class TestDemosLinux:
 
     @pytest.mark.hddl
     @pytest.mark.xfail(reason='38557 issue')
-    def test_text_cpp_hddl(self, tester, image, product_version):
+    def test_text_cpp_hddl(self, tester, image, product_version, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/ion:/dev/ion'],
                   'volumes': ['/var/tmp:/var/tmp'], 'mem_limit': '3g'}  # nosec # noqa: S108
         options = '-dt image' if '2021' not in product_version else ''
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -339,12 +428,12 @@ class TestDemosLinux:
             self.test_detection_ssd_python_hddl.__name__, **kwargs,
         )
 
-    def test_segmentation_cpp_cpu(self, tester, image):
+    def test_segmentation_cpp_cpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'mem_limit': '3g'}
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -359,12 +448,12 @@ class TestDemosLinux:
         )
 
     @pytest.mark.gpu
-    def test_segmentation_cpp_gpu(self, tester, image):
+    def test_segmentation_cpp_gpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/dri:/dev/dri'], 'mem_limit': '3g'}
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -379,13 +468,13 @@ class TestDemosLinux:
         )
 
     @pytest.mark.vpu
-    def test_segmentation_cpp_vpu(self, tester, image):
+    def test_segmentation_cpp_vpu(self, tester, image, install_openvino_dependencies):
         kwargs = {'device_cgroup_rules': ['c 189:* rmw'],
                   'volumes': ['/dev/bus/usb:/dev/bus/usb'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -401,13 +490,13 @@ class TestDemosLinux:
 
     @pytest.mark.hddl
     @pytest.mark.xfail(reason='38557 issue')
-    def test_segmentation_cpp_hddl(self, tester, image):
+    def test_segmentation_cpp_hddl(self, tester, image, install_openvino_dependencies):
         kwargs = {'devices': ['/dev/ion:/dev/ion'],
                   'volumes': ['/var/tmp:/var/tmp'], 'mem_limit': '3g'}  # nosec # noqa: S108
         tester.test_docker_image(
             image,
-            ['/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'apt update && apt install make && '
+            [install_openvino_dependencies,
+             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              '/opt/intel/openvino/deployment_tools/open_model_zoo/demos/build_demos.sh"',
              '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
              'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
@@ -572,100 +661,4 @@ class TestDemosLinux:
              '-i /opt/intel/openvino/deployment_tools/demo/car_1.bmp -d HDDL --no_show"',
              ],
             self.test_object_detection_centernet_python_hddl.__name__, **kwargs,
-        )
-
-    def test_action_recognition_python_cpu(self, tester, image):
-        tester.test_docker_image(
-            image,
-            ['/bin/bash -ac "apt update && apt install -y --no-install-recommends curl ffmpeg"',
-             '/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
-             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
-             'head-pose-face-detection-female.mp4?raw=true"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
-             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
-             'action_recognition/action_recognition.py '
-             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
-             'action-recognition-0001-encoder.xml '
-             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
-             'action-recognition-0001-decoder.xml '
-             '-i /root/action_recognition.mp4 -d CPU --no_show"',
-             ],
-            self.test_action_recognition_python_cpu.__name__,
-        )
-
-    @pytest.mark.gpu
-    def test_action_recognition_python_gpu(self, tester, image):
-        kwargs = {'devices': ['/dev/dri:/dev/dri'], 'mem_limit': '3g'}
-        tester.test_docker_image(
-            image,
-            ['/bin/bash -ac "apt update && apt install -y --no-install-recommends curl ffmpeg"',
-             '/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
-             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
-             'head-pose-face-detection-female.mp4?raw=true"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
-             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
-             'action_recognition/action_recognition.py '
-             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
-             'action-recognition-0001-encoder.xml '
-             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
-             'action-recognition-0001-decoder.xml '
-             '-i /root/action_recognition.mp4 -d GPU --no_show"',
-             ],
-            self.test_action_recognition_python_gpu.__name__, **kwargs,
-        )
-
-    @pytest.mark.vpu
-    def test_action_recognition_python_vpu(self, tester, image):
-        kwargs = {'device_cgroup_rules': ['c 189:* rmw'],
-                  'volumes': ['/dev/bus/usb:/dev/bus/usb'], 'mem_limit': '3g'}  # nosec # noqa: S108
-        tester.test_docker_image(
-            image,
-            ['/bin/bash -ac "apt update && apt install -y --no-install-recommends curl ffmpeg"',
-             '/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
-             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
-             'head-pose-face-detection-female.mp4?raw=true"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
-             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
-             'action_recognition/action_recognition.py '
-             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
-             'action-recognition-0001-encoder.xml '
-             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
-             'action-recognition-0001-decoder.xml '
-             '-i /root/action_recognition.mp4 -d MYRIAD --no_show"',
-             ],
-            self.test_action_recognition_python_vpu.__name__, **kwargs,
-        )
-
-    @pytest.mark.hddl
-    def test_action_recognition_python_hddl(self, tester, image):
-        kwargs = {'devices': ['/dev/ion:/dev/ion'],
-                  'volumes': ['/var/tmp:/var/tmp'], 'mem_limit': '3g'}  # nosec # noqa: S108
-        tester.test_docker_image(
-            image,
-            ['/bin/bash -ac "apt update && apt install -y --no-install-recommends curl ffmpeg"',
-             '/bin/bash -ac "curl -LJo /root/action_recognition.mp4 '
-             'https://github.com/intel-iot-devkit/sample-videos/blob/master/'
-             'head-pose-face-detection-female.mp4?raw=true"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader/downloader.py '
-             '--name action-recognition-0001-encoder,action-recognition-0001-decoder --precision FP16"',
-             '/bin/bash -ac ". /opt/intel/openvino/bin/setupvars.sh && '
-             'python3 /opt/intel/openvino/deployment_tools/open_model_zoo/demos/python_demos/'
-             'action_recognition/action_recognition.py '
-             '-m_en /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-encoder/FP16/'
-             'action-recognition-0001-encoder.xml '
-             '-m_de /opt/intel/openvino/intel/action-recognition-0001/action-recognition-0001-decoder/FP16/'
-             'action-recognition-0001-decoder.xml '
-             '-i /root/action_recognition.mp4 -d HDDL --no_show"',
-             ],
-            self.test_action_recognition_python_hddl.__name__, **kwargs,
         )

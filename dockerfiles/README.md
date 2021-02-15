@@ -12,9 +12,9 @@ You can use Docker CI framework to build an image, please follow [Get Started wi
 ## Supported Operating Systems for Docker image:
  - `ubuntu18` folder (Ubuntu* 18.04 LTS)
  - `ubuntu20` folder (Ubuntu* 20.04 LTS)
- - `centos7` folder (CentOS* 7.6)
- - `centos8` folder (CentOS* 8.2)
- - `rhel8` folder (RHEL* 8.2) 
+ - `centos7` folder (CentOS* 7)
+ - `centos8` folder (CentOS* 8)
+ - `rhel8` folder (RHEL* 8) 
  - `winserver2019` folder (Windows* Server Core base OS LTSC 2019)
 
 ## Supported devices and distributions
@@ -61,9 +61,9 @@ You can use Docker CI framework to build an image, please follow [Get Started wi
 ```bash
 python3 docker_openvino.py build --file "dockerfiles/ubuntu18/openvino_c_base_2020.3.dockerfile" -os ubuntu18 -dist base -p 2020.3.341
 ```
-Or via Docker Engine directly, but you need specify `build_id` argument:
+Or via Docker Engine directly, but you need specify `BUILD_ID` argument:
 ```bash
-docker build --build-arg build_id=2020.3.341 -t ubuntu18_base_cpu:2020.3.341 - < dockerfiles/ubuntu18/openvino_c_base_2020.3.dockerfile
+docker build --build-arg BUILD_ID=2020.3.341 -t ubuntu18_base_cpu:2020.3.341 - < dockerfiles/ubuntu18/openvino_c_base_2020.3.dockerfile
 ```
 ----------------
 
@@ -87,7 +87,10 @@ docker build --build-arg package_url=https://storage.openvinotoolkit.org/reposit
              --build-arg INTEL_OCLOC=19.41.14441 \
             -t ubuntu18_dev:2021.1 -f dockerfiles/ubuntu18/openvino_cgvh_dev_2021.dockerfile .
 ```
+----------------
 
+* Custom image with CPU, iGPU, VPU support  
+To learn more, follow [Build custom Intel® Distribution of OpenVINO™ toolkit Docker image](ubuntu18/build_custom/README.md).
 
 ## Prebuilt images
 
