@@ -193,7 +193,9 @@ class DockerCIArgumentParser(argparse.ArgumentParser):
         parser.add_argument(
             '-dist',
             '--distribution',
-            choices=['base', 'runtime', 'data_runtime', 'dev', 'data_dev', 'internal_dev', 'proprietary', 'custom'],
+            choices=['base', 'runtime', 'data_runtime', 'dev', 'data_dev', 'internal_dev', 'proprietary', 'custom',
+                'custom-full'
+            ],
             required=' test' in parser.prog,
             help='Distribution type: dev, data_dev, runtime, data_runtime, internal_dev, '
                  'proprietary (product pkg with an installer) or '
@@ -465,7 +467,7 @@ def parse_args(name: str, description: str):  # noqa
         if match:
             # save product version YYYY.U
             args.product_version = match.group(1)
-        elif args.distribution == 'custom':
+        elif args.distribution in ['custom', 'custom-full']:
             args.product_version = list(INTEL_OPENVINO_VERSION.keys())[-1]
         else:
             parser.error('Cannot get product_version from the package URL and docker image. '
